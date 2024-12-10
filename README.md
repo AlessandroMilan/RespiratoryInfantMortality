@@ -1,8 +1,11 @@
 # Respiratory infant mortality rate in Mexico by month of birth
 
-Daniel E. Noyola, Héctor A. Milán, Juan C. Cuevas-Tello
+Alessandro Milan, Juan C. Cuevas-Tello, Daniel E. Noyola
 
 Universidad Autónoma de San Luis Potosí
+
+## Usage Restrictions
+This repository's contents, including data and code, are made available under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). They are intended solely for educational and research purposes. Commercial use is prohibited.
 
 
 ```python
