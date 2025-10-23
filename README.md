@@ -1,14 +1,35 @@
 # Respiratory infant mortality rate in Mexico by month of birth
 
-Alessandro Milan, Juan C. Cuevas-Tello, Daniel E. Noyola
+Daniel E. Noyola, Héctor A. Milán, Juan C. Cuevas-Tello
 
 Universidad Autónoma de San Luis Potosí
 
-## Usage Restrictions
-This repository's contents, including data and code, are made available under the Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0). They are intended solely for educational and research purposes. Commercial use is prohibited.
+
+```python
+%pip install pandas matplotlib seaborn numpy statsmodels
+```
+
+    Requirement already satisfied: pandas in ./.venv/lib/python3.12/site-packages (2.3.3)
+    Requirement already satisfied: matplotlib in ./.venv/lib/python3.12/site-packages (3.10.7)
+    Requirement already satisfied: seaborn in ./.venv/lib/python3.12/site-packages (0.13.2)
+    Requirement already satisfied: numpy in ./.venv/lib/python3.12/site-packages (2.3.4)
+    Requirement already satisfied: statsmodels in ./.venv/lib/python3.12/site-packages (0.14.5)
+    Requirement already satisfied: python-dateutil>=2.8.2 in ./.venv/lib/python3.12/site-packages (from pandas) (2.9.0.post0)
+    Requirement already satisfied: pytz>=2020.1 in ./.venv/lib/python3.12/site-packages (from pandas) (2025.2)
+    Requirement already satisfied: tzdata>=2022.7 in ./.venv/lib/python3.12/site-packages (from pandas) (2025.2)
+    Requirement already satisfied: contourpy>=1.0.1 in ./.venv/lib/python3.12/site-packages (from matplotlib) (1.3.3)
+    Requirement already satisfied: cycler>=0.10 in ./.venv/lib/python3.12/site-packages (from matplotlib) (0.12.1)
+    Requirement already satisfied: fonttools>=4.22.0 in ./.venv/lib/python3.12/site-packages (from matplotlib) (4.60.1)
+    Requirement already satisfied: kiwisolver>=1.3.1 in ./.venv/lib/python3.12/site-packages (from matplotlib) (1.4.9)
+    Requirement already satisfied: packaging>=20.0 in ./.venv/lib/python3.12/site-packages (from matplotlib) (25.0)
+    Requirement already satisfied: pillow>=8 in ./.venv/lib/python3.12/site-packages (from matplotlib) (12.0.0)
+    Requirement already satisfied: pyparsing>=3 in ./.venv/lib/python3.12/site-packages (from matplotlib) (3.2.5)
+    Requirement already satisfied: scipy!=1.9.2,>=1.8 in ./.venv/lib/python3.12/site-packages (from statsmodels) (1.16.2)
+    Requirement already satisfied: patsy>=0.5.6 in ./.venv/lib/python3.12/site-packages (from statsmodels) (1.0.2)
+    Requirement already satisfied: six>=1.5 in ./.venv/lib/python3.12/site-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)
+    Note: you may need to restart the kernel to use updated packages.
 
 
-## Initial Configuration
 
 ```python
 import pandas as pd
@@ -16,12 +37,28 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import math
+
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+from statsmodels.stats.multitest import multipletests
+from itertools import product
+```
+
+**Change this variable to disable Gray Scale plotting**
+
+```
+grayscale = False
+```
+
+
+```python
+
+grayscale = True
 ```
 
 
 ```python
 # Helper variables
-grayscale = True
 datasets_folder = 'Datasets'
 plots_folder = 'Plots'
 image_format = 'eps'
@@ -70,7 +107,7 @@ print(f'Total deaths:  {len(mortality_df):,}')
 ```
 
     Total deaths:  144,243
-    
+
 
 ### Dataset Overview
 
@@ -204,7 +241,7 @@ print(f'Deaths attributed to respiratory illnesses: {len(respiratory_illness_df1
 ```
 
     Deaths attributed to respiratory illnesses: 8,805
-    
+
 
 ## Registered Births
 
@@ -227,7 +264,7 @@ print(f'Total births: {len(birth_records_df):,}')
 ```
 
     Total births: 12,604,902
-    
+
 
 ### Dataset overview
 
@@ -381,7 +418,7 @@ print(f'Respiratory deaths (percentage): {(len(respiratory_illness_df1) /  len(m
     Infant Mortality Rate: 11.44 deaths / 1,000 births
     Infant mortality Rate (Respiratory Ilness): 0.70 per 1,000 births
     Respiratory deaths (percentage): 6.10%
-    
+
 
 
 ```python
@@ -746,17 +783,24 @@ plt.savefig(f'{plots_folder}/Fig1.{image_format}', format=image_format, dpi=1200
 # Display the plot
 plt.show()
 ```
-
-    The PostScript backend does not support transparency; partially transparent artists will be rendered opaque.
     
-
-
-    
-![png](main_files/main_26_1.png)
+![png](nbconvert_output/output_29_1.png)
     
 
 
 **Figure 2.** Average monthly respiratory (J and U ICD-10 codes) infant mortality rates based on month of occurrence and month of birth in Mexico (April 2014-March 2020).
+
+
+```python
+def rate_and_ci(deaths, births, scale=1000.0, z=1.96):
+    deaths = deaths.astype(float)
+    births = births.astype(float)
+    rate = np.round((deaths / births) * scale, 2)
+    se = np.sqrt(deaths) / births * scale
+    lo = np.round(np.maximum(0.0, rate - z * se), 2)
+    hi = np.round(rate + z * se, 2)
+    return rate, lo, hi
+```
 
 
 ```python
@@ -773,8 +817,16 @@ grouped_df = pd.merge(grouped_births_df, grouped_deaths_df1, left_on='MES_NAC', 
 grouped_df = pd.merge(grouped_df, grouped_deaths_df2, left_on='MES_NAC', right_on='MES_OCURR', how='inner')
 
 grouped_df.drop(columns=['MES_NACIM', 'MES_OCURR'], inplace=True)
-grouped_df['Mortality_Rate_Birth'] =  grouped_df['Deaths_Birth'] / grouped_df['Births'] *  1000
-grouped_df['Mortality_Rate_Occurence'] =  grouped_df['Deaths_Occurence'] / grouped_df['Births'] *  1000
+
+rate, lo, hi = rate_and_ci(grouped_df['Deaths_Birth'], grouped_df['Births'])
+grouped_df['Mortality_Rate_Birth'] =  rate
+grouped_df['Mortality_Rate_Birth_Lower'] =  lo
+grouped_df['Mortality_Rate_Birth_Upper'] =  hi
+
+rate, lo, hi = rate_and_ci(grouped_df['Deaths_Occurence'], grouped_df['Births'])
+grouped_df['Mortality_Rate_Occurence'] =  rate
+grouped_df['Mortality_Rate_Occurence_Lower'] =  lo
+grouped_df['Mortality_Rate_Occurence_Upper'] =  hi
 
 # Replace the 'MES_NAC' values with month names
 grouped_df['MES_NAC'] = grouped_df['MES_NAC'].map(month_mapping)
@@ -814,7 +866,11 @@ grouped_df.head(12)
       <th>Deaths_Birth</th>
       <th>Deaths_Occurence</th>
       <th>Mortality_Rate_Birth</th>
+      <th>Mortality_Rate_Birth_Lower</th>
+      <th>Mortality_Rate_Birth_Upper</th>
       <th>Mortality_Rate_Occurence</th>
+      <th>Mortality_Rate_Occurence_Lower</th>
+      <th>Mortality_Rate_Occurence_Upper</th>
     </tr>
   </thead>
   <tbody>
@@ -824,8 +880,12 @@ grouped_df.head(12)
       <td>1076970</td>
       <td>741</td>
       <td>624</td>
-      <td>0.688041</td>
-      <td>0.579403</td>
+      <td>0.69</td>
+      <td>0.64</td>
+      <td>0.74</td>
+      <td>0.58</td>
+      <td>0.53</td>
+      <td>0.63</td>
     </tr>
     <tr>
       <th>7</th>
@@ -833,8 +893,12 @@ grouped_df.head(12)
       <td>1136385</td>
       <td>812</td>
       <td>517</td>
-      <td>0.714547</td>
-      <td>0.454951</td>
+      <td>0.71</td>
+      <td>0.66</td>
+      <td>0.76</td>
+      <td>0.45</td>
+      <td>0.41</td>
+      <td>0.49</td>
     </tr>
     <tr>
       <th>8</th>
@@ -842,8 +906,12 @@ grouped_df.head(12)
       <td>1181923</td>
       <td>992</td>
       <td>567</td>
-      <td>0.839310</td>
-      <td>0.479727</td>
+      <td>0.84</td>
+      <td>0.79</td>
+      <td>0.89</td>
+      <td>0.48</td>
+      <td>0.44</td>
+      <td>0.52</td>
     </tr>
     <tr>
       <th>9</th>
@@ -851,8 +919,12 @@ grouped_df.head(12)
       <td>1153400</td>
       <td>989</td>
       <td>688</td>
-      <td>0.857465</td>
-      <td>0.596497</td>
+      <td>0.86</td>
+      <td>0.81</td>
+      <td>0.91</td>
+      <td>0.60</td>
+      <td>0.56</td>
+      <td>0.64</td>
     </tr>
     <tr>
       <th>10</th>
@@ -860,8 +932,12 @@ grouped_df.head(12)
       <td>1056550</td>
       <td>874</td>
       <td>917</td>
-      <td>0.827221</td>
-      <td>0.867919</td>
+      <td>0.83</td>
+      <td>0.78</td>
+      <td>0.88</td>
+      <td>0.87</td>
+      <td>0.81</td>
+      <td>0.93</td>
     </tr>
     <tr>
       <th>11</th>
@@ -869,8 +945,12 @@ grouped_df.head(12)
       <td>1067736</td>
       <td>774</td>
       <td>1180</td>
-      <td>0.724898</td>
-      <td>1.105142</td>
+      <td>0.72</td>
+      <td>0.67</td>
+      <td>0.77</td>
+      <td>1.11</td>
+      <td>1.05</td>
+      <td>1.17</td>
     </tr>
     <tr>
       <th>0</th>
@@ -878,8 +958,12 @@ grouped_df.head(12)
       <td>1019441</td>
       <td>616</td>
       <td>1145</td>
-      <td>0.604253</td>
-      <td>1.123165</td>
+      <td>0.60</td>
+      <td>0.55</td>
+      <td>0.65</td>
+      <td>1.12</td>
+      <td>1.05</td>
+      <td>1.19</td>
     </tr>
     <tr>
       <th>1</th>
@@ -887,8 +971,12 @@ grouped_df.head(12)
       <td>902558</td>
       <td>570</td>
       <td>906</td>
-      <td>0.631538</td>
-      <td>1.003814</td>
+      <td>0.63</td>
+      <td>0.58</td>
+      <td>0.68</td>
+      <td>1.00</td>
+      <td>0.93</td>
+      <td>1.07</td>
     </tr>
     <tr>
       <th>2</th>
@@ -896,8 +984,12 @@ grouped_df.head(12)
       <td>986549</td>
       <td>523</td>
       <td>803</td>
-      <td>0.530131</td>
-      <td>0.813948</td>
+      <td>0.53</td>
+      <td>0.48</td>
+      <td>0.58</td>
+      <td>0.81</td>
+      <td>0.75</td>
+      <td>0.87</td>
     </tr>
     <tr>
       <th>3</th>
@@ -905,8 +997,12 @@ grouped_df.head(12)
       <td>994946</td>
       <td>567</td>
       <td>708</td>
-      <td>0.569880</td>
-      <td>0.711596</td>
+      <td>0.57</td>
+      <td>0.52</td>
+      <td>0.62</td>
+      <td>0.71</td>
+      <td>0.66</td>
+      <td>0.76</td>
     </tr>
     <tr>
       <th>4</th>
@@ -914,8 +1010,12 @@ grouped_df.head(12)
       <td>1024246</td>
       <td>662</td>
       <td>650</td>
-      <td>0.646329</td>
-      <td>0.634613</td>
+      <td>0.65</td>
+      <td>0.60</td>
+      <td>0.70</td>
+      <td>0.63</td>
+      <td>0.58</td>
+      <td>0.68</td>
     </tr>
     <tr>
       <th>5</th>
@@ -923,8 +1023,12 @@ grouped_df.head(12)
       <td>1004198</td>
       <td>685</td>
       <td>518</td>
-      <td>0.682136</td>
-      <td>0.515835</td>
+      <td>0.68</td>
+      <td>0.63</td>
+      <td>0.73</td>
+      <td>0.52</td>
+      <td>0.48</td>
+      <td>0.56</td>
     </tr>
   </tbody>
 </table>
@@ -937,7 +1041,11 @@ grouped_df.head(12)
 
 months = grouped_df['MES_NAC']
 mortality_rate_birth = grouped_df['Mortality_Rate_Birth']
+ci95_Lower_birth = grouped_df['Mortality_Rate_Birth_Lower']
+ci95_Upper_birth = grouped_df['Mortality_Rate_Birth_Upper']
 mortality_rate_occurrence = grouped_df['Mortality_Rate_Occurence']
+ci95_Lower_occurrence = grouped_df['Mortality_Rate_Occurence_Lower']
+ci95_Upper_occurrence = grouped_df['Mortality_Rate_Occurence_Upper']
 
 # Set up the figure and axis
 plt.figure(figsize=(12, 6))
@@ -953,16 +1061,36 @@ plt.bar(index - bar_width / 3,
         mortality_rate_birth, 
         bar_width, 
         label='Month of birth J+U mortality', 
-        color='gray' if grayscale else 'orange', 
+        color='lightgray' if grayscale else 'orange', 
         edgecolor='white')
+
+# Error bars
+plt.errorbar(index - bar_width / 3, 
+        mortality_rate_birth,
+        yerr=[mortality_rate_birth-ci95_Lower_birth,
+                ci95_Upper_birth-mortality_rate_birth],
+        color='black', 
+        fmt='none', 
+        elinewidth=1, 
+        capsize=3)
 
 # Create bars for Month of Occurrence Mortality Rate, offset by bar_width
 plt.bar(index + bar_width, 
         mortality_rate_occurrence, 
         bar_width, label='Month of occurrence J+U mortality', 
         hatch='///', 
-        color='gray' if grayscale else 'blue', 
+        color='lightgray' if grayscale else 'blue', 
         edgecolor='white')
+
+# Error bars
+plt.errorbar(index + bar_width, 
+        mortality_rate_occurrence,
+        yerr=[mortality_rate_occurrence-ci95_Lower_occurrence,
+                ci95_Upper_occurrence-mortality_rate_occurrence],
+        color='black', 
+        fmt='none', 
+        elinewidth=1, 
+        capsize=3)
 
 
 plt.legend()
@@ -992,14 +1120,44 @@ plt.savefig(f'{plots_folder}/Fig2.{image_format}', format=image_format, dpi=1200
 # Display the plot
 plt.show()
 ```
-
-    The PostScript backend does not support transparency; partially transparent artists will be rendered opaque.
+    
+![png](nbconvert_output/output_33_1.png)
     
 
 
-    
-![png](main_files/main_29_1.png)
-    
+### Chi-square test of homogeneity to evaluate overall seasonal variation
+
+1. Mortality rates based on the month of occurrence
+2. Mortality rates based on the month of birth
+
+
+```python
+from scipy.stats import chi2_contingency
+
+# Example for months
+table = np.array([grouped_df['Deaths_Occurence'], grouped_df['Births'] - grouped_df['Deaths_Occurence']])
+chi2, p, dof, expected = chi2_contingency(table)
+
+
+print(f"Chi² = {chi2:.3f}, df = {dof}, p-value = {p:.3e}")
+```
+
+    Chi² = 907.086, df = 11, p-value = 1.858e-187
+
+
+
+```python
+from scipy.stats import chi2_contingency
+
+# Example for months
+table = np.array([grouped_df['Deaths_Birth'], grouped_df['Births'] - grouped_df['Deaths_Birth']])
+chi2, p, dof, expected = chi2_contingency(table)
+
+
+print(f"Chi² = {chi2:.3f}, df = {dof}, p-value = {p:.3e}")
+```
+
+    Chi² = 188.850, df = 11, p-value = 1.520e-34
 
 
 ### Respiratory Mortality Rates by State and Region
@@ -1310,7 +1468,11 @@ totals_row['State'] = 'Mexico (Country)'
 totals_row['REGION'] = 'TOTAL'
 grouped_df = pd.concat([grouped_df, totals_row], ignore_index=True)
 
-grouped_df['Respiratory_Mortality_Rate'] = (grouped_df['Deaths'] / grouped_df['Births'] * 1000).apply(lambda x: round(x, 2))
+r, lo, hi = rate_and_ci(grouped_df['Deaths'].values, grouped_df['Births'].values)
+
+grouped_df['Respiratory_Mortality_Rate'] = r
+grouped_df['CI95_Lower'] = lo
+grouped_df['CI95_Upper'] = hi
 grouped_df.head(33)
 ```
 
@@ -1341,6 +1503,8 @@ grouped_df.head(33)
       <th>Births</th>
       <th>Deaths</th>
       <th>Respiratory_Mortality_Rate</th>
+      <th>CI95_Lower</th>
+      <th>CI95_Upper</th>
     </tr>
   </thead>
   <tbody>
@@ -1352,6 +1516,8 @@ grouped_df.head(33)
       <td>154704.0</td>
       <td>80.0</td>
       <td>0.52</td>
+      <td>0.41</td>
+      <td>0.63</td>
     </tr>
     <tr>
       <th>1</th>
@@ -1361,6 +1527,8 @@ grouped_df.head(33)
       <td>318748.0</td>
       <td>209.0</td>
       <td>0.66</td>
+      <td>0.57</td>
+      <td>0.75</td>
     </tr>
     <tr>
       <th>2</th>
@@ -1370,6 +1538,8 @@ grouped_df.head(33)
       <td>71916.0</td>
       <td>36.0</td>
       <td>0.50</td>
+      <td>0.34</td>
+      <td>0.66</td>
     </tr>
     <tr>
       <th>3</th>
@@ -1379,6 +1549,8 @@ grouped_df.head(33)
       <td>94852.0</td>
       <td>58.0</td>
       <td>0.61</td>
+      <td>0.45</td>
+      <td>0.77</td>
     </tr>
     <tr>
       <th>4</th>
@@ -1388,6 +1560,8 @@ grouped_df.head(33)
       <td>335568.0</td>
       <td>169.0</td>
       <td>0.50</td>
+      <td>0.42</td>
+      <td>0.58</td>
     </tr>
     <tr>
       <th>5</th>
@@ -1397,6 +1571,8 @@ grouped_df.head(33)
       <td>66398.0</td>
       <td>27.0</td>
       <td>0.41</td>
+      <td>0.26</td>
+      <td>0.56</td>
     </tr>
     <tr>
       <th>6</th>
@@ -1406,6 +1582,8 @@ grouped_df.head(33)
       <td>780847.0</td>
       <td>1093.0</td>
       <td>1.40</td>
+      <td>1.32</td>
+      <td>1.48</td>
     </tr>
     <tr>
       <th>7</th>
@@ -1415,6 +1593,8 @@ grouped_df.head(33)
       <td>353264.0</td>
       <td>314.0</td>
       <td>0.89</td>
+      <td>0.79</td>
+      <td>0.99</td>
     </tr>
     <tr>
       <th>8</th>
@@ -1424,6 +1604,8 @@ grouped_df.head(33)
       <td>682342.0</td>
       <td>497.0</td>
       <td>0.73</td>
+      <td>0.67</td>
+      <td>0.79</td>
     </tr>
     <tr>
       <th>9</th>
@@ -1433,6 +1615,8 @@ grouped_df.head(33)
       <td>204847.0</td>
       <td>165.0</td>
       <td>0.81</td>
+      <td>0.69</td>
+      <td>0.93</td>
     </tr>
     <tr>
       <th>10</th>
@@ -1442,6 +1626,8 @@ grouped_df.head(33)
       <td>669729.0</td>
       <td>429.0</td>
       <td>0.64</td>
+      <td>0.58</td>
+      <td>0.70</td>
     </tr>
     <tr>
       <th>11</th>
@@ -1451,6 +1637,8 @@ grouped_df.head(33)
       <td>425281.0</td>
       <td>242.0</td>
       <td>0.57</td>
+      <td>0.50</td>
+      <td>0.64</td>
     </tr>
     <tr>
       <th>12</th>
@@ -1460,6 +1648,8 @@ grouped_df.head(33)
       <td>283658.0</td>
       <td>151.0</td>
       <td>0.53</td>
+      <td>0.45</td>
+      <td>0.61</td>
     </tr>
     <tr>
       <th>13</th>
@@ -1469,6 +1659,8 @@ grouped_df.head(33)
       <td>854794.0</td>
       <td>445.0</td>
       <td>0.52</td>
+      <td>0.47</td>
+      <td>0.57</td>
     </tr>
     <tr>
       <th>14</th>
@@ -1478,6 +1670,8 @@ grouped_df.head(33)
       <td>1615543.0</td>
       <td>902.0</td>
       <td>0.56</td>
+      <td>0.52</td>
+      <td>0.60</td>
     </tr>
     <tr>
       <th>15</th>
@@ -1487,6 +1681,8 @@ grouped_df.head(33)
       <td>535308.0</td>
       <td>317.0</td>
       <td>0.59</td>
+      <td>0.52</td>
+      <td>0.66</td>
     </tr>
     <tr>
       <th>16</th>
@@ -1496,6 +1692,8 @@ grouped_df.head(33)
       <td>177192.0</td>
       <td>57.0</td>
       <td>0.32</td>
+      <td>0.24</td>
+      <td>0.40</td>
     </tr>
     <tr>
       <th>17</th>
@@ -1505,6 +1703,8 @@ grouped_df.head(33)
       <td>117962.0</td>
       <td>66.0</td>
       <td>0.56</td>
+      <td>0.43</td>
+      <td>0.69</td>
     </tr>
     <tr>
       <th>18</th>
@@ -1514,6 +1714,8 @@ grouped_df.head(33)
       <td>540412.0</td>
       <td>276.0</td>
       <td>0.51</td>
+      <td>0.45</td>
+      <td>0.57</td>
     </tr>
     <tr>
       <th>19</th>
@@ -1523,6 +1725,8 @@ grouped_df.head(33)
       <td>447348.0</td>
       <td>349.0</td>
       <td>0.78</td>
+      <td>0.70</td>
+      <td>0.86</td>
     </tr>
     <tr>
       <th>20</th>
@@ -1532,6 +1736,8 @@ grouped_df.head(33)
       <td>741317.0</td>
       <td>766.0</td>
       <td>1.03</td>
+      <td>0.96</td>
+      <td>1.10</td>
     </tr>
     <tr>
       <th>21</th>
@@ -1541,6 +1747,8 @@ grouped_df.head(33)
       <td>234345.0</td>
       <td>97.0</td>
       <td>0.41</td>
+      <td>0.33</td>
+      <td>0.49</td>
     </tr>
     <tr>
       <th>22</th>
@@ -1550,6 +1758,8 @@ grouped_df.head(33)
       <td>171679.0</td>
       <td>120.0</td>
       <td>0.70</td>
+      <td>0.57</td>
+      <td>0.83</td>
     </tr>
     <tr>
       <th>23</th>
@@ -1559,6 +1769,8 @@ grouped_df.head(33)
       <td>287471.0</td>
       <td>161.0</td>
       <td>0.56</td>
+      <td>0.47</td>
+      <td>0.65</td>
     </tr>
     <tr>
       <th>24</th>
@@ -1568,6 +1780,8 @@ grouped_df.head(33)
       <td>293436.0</td>
       <td>187.0</td>
       <td>0.64</td>
+      <td>0.55</td>
+      <td>0.73</td>
     </tr>
     <tr>
       <th>25</th>
@@ -1577,6 +1791,8 @@ grouped_df.head(33)
       <td>265796.0</td>
       <td>202.0</td>
       <td>0.76</td>
+      <td>0.66</td>
+      <td>0.86</td>
     </tr>
     <tr>
       <th>26</th>
@@ -1586,6 +1802,8 @@ grouped_df.head(33)
       <td>266569.0</td>
       <td>228.0</td>
       <td>0.86</td>
+      <td>0.75</td>
+      <td>0.97</td>
     </tr>
     <tr>
       <th>27</th>
@@ -1595,6 +1813,8 @@ grouped_df.head(33)
       <td>331702.0</td>
       <td>157.0</td>
       <td>0.47</td>
+      <td>0.40</td>
+      <td>0.54</td>
     </tr>
     <tr>
       <th>28</th>
@@ -1604,6 +1824,8 @@ grouped_df.head(33)
       <td>143860.0</td>
       <td>119.0</td>
       <td>0.83</td>
+      <td>0.68</td>
+      <td>0.98</td>
     </tr>
     <tr>
       <th>29</th>
@@ -1613,6 +1835,8 @@ grouped_df.head(33)
       <td>739486.0</td>
       <td>570.0</td>
       <td>0.77</td>
+      <td>0.71</td>
+      <td>0.83</td>
     </tr>
     <tr>
       <th>30</th>
@@ -1622,6 +1846,8 @@ grouped_df.head(33)
       <td>209705.0</td>
       <td>211.0</td>
       <td>1.01</td>
+      <td>0.87</td>
+      <td>1.15</td>
     </tr>
     <tr>
       <th>31</th>
@@ -1631,6 +1857,8 @@ grouped_df.head(33)
       <td>188823.0</td>
       <td>105.0</td>
       <td>0.56</td>
+      <td>0.45</td>
+      <td>0.67</td>
     </tr>
     <tr>
       <th>32</th>
@@ -1640,6 +1868,8 @@ grouped_df.head(33)
       <td>12604902.0</td>
       <td>8805.0</td>
       <td>0.70</td>
+      <td>0.69</td>
+      <td>0.71</td>
     </tr>
   </tbody>
 </table>
@@ -1858,6 +2088,25 @@ monthly_mortality_rates.head(12)
 
 
 
+
+```python
+def fit_count_glm(formula, data, offset_col, family='poisson'):
+    if family == 'poisson':
+        fam = sm.families.Poisson()
+    else:
+        fam = sm.families.NegativeBinomial()
+        
+    model = smf.glm(formula=formula,
+                    data=data,
+                    family=fam,
+                    offset=np.log(data[offset_col])).fit()
+    return model
+
+def dispersion_ratio(model):
+    return model.pearson_chi2 / model.df_resid
+
+```
+
 #### Respiratory Mortality Rates (Grouped by Region)
 
 
@@ -1878,7 +2127,10 @@ grouped_df.rename(columns={'REGION_x': 'Region', 'NOM_ENTIDAD_x': 'State', 'MES_
 grouped_df['Deaths'] = grouped_df['Deaths'].fillna(0)
 
 regional_mortality_rates = grouped_df.groupby(['Region'])[['Births', 'Deaths']].sum().reset_index()
-regional_mortality_rates['Mortality_Rate'] =  (regional_mortality_rates['Deaths'] / regional_mortality_rates['Births'] *  1000).apply(lambda x: round(x, 2))
+r, lo, hi = rate_and_ci(regional_mortality_rates['Deaths'].values, regional_mortality_rates['Births'].values)
+regional_mortality_rates['Mortality_Rate'] =  r
+regional_mortality_rates['CI95_Lower'] = lo
+regional_mortality_rates['CI95_Upper'] = hi
 
 regional_mortality_rates.drop(columns=['Births','Deaths'], inplace=True)
 
@@ -1908,6 +2160,8 @@ regional_mortality_rates.head(9)
       <th></th>
       <th>Region</th>
       <th>Mortality_Rate</th>
+      <th>CI95_Lower</th>
+      <th>CI95_Upper</th>
     </tr>
   </thead>
   <tbody>
@@ -1915,41 +2169,57 @@ regional_mortality_rates.head(9)
       <th>0</th>
       <td>Centro Este</td>
       <td>0.67</td>
+      <td>0.64</td>
+      <td>0.70</td>
     </tr>
     <tr>
       <th>1</th>
       <td>Centro Occidente</td>
       <td>0.57</td>
+      <td>0.54</td>
+      <td>0.60</td>
     </tr>
     <tr>
       <th>2</th>
       <td>Centro Sur</td>
       <td>0.79</td>
+      <td>0.73</td>
+      <td>0.85</td>
     </tr>
     <tr>
       <th>3</th>
       <td>Noreste</td>
       <td>0.50</td>
+      <td>0.45</td>
+      <td>0.55</td>
     </tr>
     <tr>
       <th>4</th>
       <td>Noroeste</td>
       <td>0.66</td>
+      <td>0.61</td>
+      <td>0.71</td>
     </tr>
     <tr>
       <th>5</th>
       <td>Norte</td>
       <td>0.67</td>
+      <td>0.63</td>
+      <td>0.71</td>
     </tr>
     <tr>
       <th>6</th>
       <td>Sur</td>
       <td>1.02</td>
+      <td>0.97</td>
+      <td>1.07</td>
     </tr>
     <tr>
       <th>7</th>
       <td>Yucatan</td>
       <td>0.82</td>
+      <td>0.74</td>
+      <td>0.90</td>
     </tr>
   </tbody>
 </table>
@@ -1964,7 +2234,7 @@ print(f'Respiratory infant mortality rate: {national_mortality_rate:.2f}%')
 ```
 
     Respiratory infant mortality rate: 0.70%
-    
+
 
 **Table 2.** Respiratory infant mortality rates by birth month in Mexican children born between April 2014 and March 2020.
 
@@ -1985,7 +2255,17 @@ grouped_df.rename(columns={'REGION_x': 'Region', 'NOM_ENTIDAD_x': 'State', 'MES_
 grouped_df['Deaths'] = grouped_df['Deaths'].fillna(0)
 
 grouped_df = grouped_df.groupby(['Region', 'Month'])[['Births', 'Deaths']].sum().reset_index()
-grouped_df['Mortality_Rate'] =  grouped_df['Deaths'] / grouped_df['Births'] *  1000
+r, lo, hi = rate_and_ci(grouped_df['Deaths'].values, grouped_df['Births'].values)
+grouped_df['Mortality_Rate'] =  r
+
+# Calculate confidence intervals
+ci_df = grouped_df.groupby(['Region', 'Month'])[['Births', 'Deaths']].sum().reset_index()
+ci_df['Rate'], ci_df['CI_Lower'], ci_df['CI_Upper'] = rate_and_ci(ci_df['Deaths'], ci_df['Births'])
+
+# merge with month names and order
+ci_df['Month'] = ci_df['Month'].map(month_mapping)
+ci_df['Month'] = pd.Categorical(ci_df['Month'], categories=custom_order, ordered=True)
+ci_df = ci_df.sort_values(['Region', 'Month'])
 
 pivot_df = grouped_df.pivot(index='Month', columns='Region', values='Mortality_Rate').reset_index()
 
@@ -2028,6 +2308,18 @@ pivot_df.rename(columns={
     'Sur': 'South',
     'Yucatan': 'Yucatan peninsula',
     }, inplace=True)
+
+# Rename ci_df Region values for consistency
+ci_df['Region'] = ci_df['Region'].replace({
+    'Centro Este': 'East-central',
+    'Centro Occidente': 'West-central',
+    'Centro Sur': 'South-central',
+    'Noreste': 'Northeast',
+    'Noroeste': 'Northwest',
+    'Norte': 'North',
+    'Sur': 'South',
+    'Yucatan': 'Yucatan peninsula',
+    })
 
 pivot_df.loc[:, pivot_df.columns != 'Month'] = pivot_df.loc[:, pivot_df.columns != 'Month'].round(2)
 
@@ -2261,10 +2553,35 @@ axes = axes.flatten()
 # Plot each region in a separate subplot
 for i, region in enumerate(regions):
     ax = axes[i]
-    # Plotting the region's mortality rate
-    ax.plot(filtered_df['Month'], filtered_df[region], label=f'{region} region', linestyle='-', color='gray' if grayscale else 'orange')
-    # Plotting the national average for comparison
-    ax.plot(filtered_df['Month'], filtered_df['National'], label='National', linestyle=(0, (1, 3)), color='gray' if grayscale else 'blue')
+    sub = ci_df[ci_df['Region'] == region]
+
+    # plot shaded 95% CI band
+    ax.fill_between(
+        sub['Month'],
+        sub['CI_Lower'],
+        sub['CI_Upper'],
+        color='lightgray',
+        alpha=0.3,
+        label='95% CI'
+    )
+
+    # Plot the region's mortality rate
+    ax.plot(
+        filtered_df['Month'], 
+        filtered_df[region], 
+        label=f'{region} region', 
+        linestyle='-', 
+        color='black' if grayscale else 'orange'
+        )
+    
+    # Plot the national average for comparison
+    ax.plot(
+        filtered_df['Month'], 
+        filtered_df['National'], 
+        label='National mean', 
+        linestyle=(0, (1, 3)), 
+        color='black' if grayscale else 'blue'
+        )
     
     # Set title and labels for each subplot
     ax.set_title(f'{region} region')
@@ -2289,13 +2606,8 @@ plt.savefig(f'{plots_folder}/Fig3.{image_format}', format=image_format, dpi=1200
 # Show the plot
 plt.show()
 ```
-
-    The PostScript backend does not support transparency; partially transparent artists will be rendered opaque.
     
-
-
-    
-![png](main_files/main_46_1.png)
+![png](nbconvert_output/output_54_1.png)
     
 
 
@@ -2438,7 +2750,8 @@ grouped_df.rename(columns={'REGION_x': 'Region', 'NOM_ENTIDAD_x': 'State', 'MES_
 grouped_df['Deaths'] = grouped_df['Deaths'].fillna(0)
 
 grouped_df = grouped_df.groupby(['Region', 'Month'])[['Births', 'Deaths']].sum().reset_index()
-grouped_df['Mortality_Rate'] =  grouped_df['Deaths'] / grouped_df['Births'] *  1000
+r, lo, hi = rate_and_ci(grouped_df['Deaths'].values, grouped_df['Births'].values)
+grouped_df['Mortality_Rate'] =  r
 
 pivot_df = grouped_df.pivot(index='Month', columns='Region', values='Mortality_Rate').reset_index()
 
@@ -2669,6 +2982,191 @@ pivot_df.head(13)
 
 
 ```python
+
+
+# Calculate confidence intervals
+ci_df = grouped_df.groupby(['Region', 'Month'])[['Births', 'Deaths']].sum().reset_index()
+ci_df['Rate'], ci_df['CI_Lower'], ci_df['CI_Upper'] = rate_and_ci(ci_df['Deaths'], ci_df['Births'])
+
+# merge with month names and order
+ci_df['Month'] = ci_df['Month'].map(month_mapping)
+ci_df['Month'] = pd.Categorical(ci_df['Month'], categories=occurence_custom_order, ordered=True)
+ci_df = ci_df.sort_values(['Region', 'Month'])
+
+# Rename ci_df Region values for consistency
+ci_df['Region'] = ci_df['Region'].replace({
+    'Centro Este': 'East-central',
+    'Centro Occidente': 'West-central',
+    'Centro Sur': 'South-central',
+    'Noreste': 'Northeast',
+    'Noroeste': 'Northwest',
+    'Norte': 'North',
+    'Sur': 'South',
+    'Yucatan': 'Yucatan peninsula',
+    })
+
+ci_df.head(12)
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>Region</th>
+      <th>Month</th>
+      <th>Births</th>
+      <th>Deaths</th>
+      <th>Rate</th>
+      <th>CI_Lower</th>
+      <th>CI_Upper</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>3</th>
+      <td>East-central</td>
+      <td>April</td>
+      <td>318596</td>
+      <td>144</td>
+      <td>0.45</td>
+      <td>0.38</td>
+      <td>0.52</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>East-central</td>
+      <td>May</td>
+      <td>327003</td>
+      <td>129</td>
+      <td>0.39</td>
+      <td>0.32</td>
+      <td>0.46</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>East-central</td>
+      <td>June</td>
+      <td>315566</td>
+      <td>131</td>
+      <td>0.42</td>
+      <td>0.35</td>
+      <td>0.49</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>East-central</td>
+      <td>July</td>
+      <td>331212</td>
+      <td>153</td>
+      <td>0.46</td>
+      <td>0.39</td>
+      <td>0.53</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>East-central</td>
+      <td>August</td>
+      <td>340441</td>
+      <td>124</td>
+      <td>0.36</td>
+      <td>0.30</td>
+      <td>0.42</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>East-central</td>
+      <td>September</td>
+      <td>347675</td>
+      <td>139</td>
+      <td>0.40</td>
+      <td>0.33</td>
+      <td>0.47</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>East-central</td>
+      <td>October</td>
+      <td>341278</td>
+      <td>202</td>
+      <td>0.59</td>
+      <td>0.51</td>
+      <td>0.67</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>East-central</td>
+      <td>November</td>
+      <td>316282</td>
+      <td>292</td>
+      <td>0.92</td>
+      <td>0.81</td>
+      <td>1.03</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>East-central</td>
+      <td>December</td>
+      <td>325198</td>
+      <td>418</td>
+      <td>1.29</td>
+      <td>1.17</td>
+      <td>1.41</td>
+    </tr>
+    <tr>
+      <th>0</th>
+      <td>East-central</td>
+      <td>January</td>
+      <td>315165</td>
+      <td>345</td>
+      <td>1.09</td>
+      <td>0.97</td>
+      <td>1.21</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>East-central</td>
+      <td>February</td>
+      <td>284037</td>
+      <td>293</td>
+      <td>1.03</td>
+      <td>0.91</td>
+      <td>1.15</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>East-central</td>
+      <td>March</td>
+      <td>315804</td>
+      <td>219</td>
+      <td>0.69</td>
+      <td>0.60</td>
+      <td>0.78</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
 # Filter out the 'Yearly Avg' row
 filtered_df = pivot_df[pivot_df['Month'] != 'Yearly Avg']
 
@@ -2685,10 +3183,35 @@ axes = axes.flatten()
 # Plot each region in a separate subplot
 for i, region in enumerate(regions):
     ax = axes[i]
-    # Plotting the region's mortality rate
-    ax.plot(filtered_df['Month'], filtered_df[region], label=f'{region} region', linestyle='-', color='gray' if grayscale else 'orange')
-    # Plotting the national average for comparison
-    ax.plot(filtered_df['Month'], filtered_df['National'], label='National', linestyle=(0, (1, 3)), color='gray' if grayscale else 'blue')
+    sub = ci_df[ci_df['Region'] == region]
+
+    # plot shaded 95% CI band
+    ax.fill_between(
+        sub['Month'],
+        sub['CI_Lower'],
+        sub['CI_Upper'],
+        color='lightgray',
+        alpha=0.3,
+        label='95% CI'
+    )
+
+    # Plot the region's mortality rate
+    ax.plot(
+        filtered_df['Month'], 
+        filtered_df[region], 
+        label=f'{region} region', 
+        linestyle='-', 
+        color='black' if grayscale else 'orange'
+        )
+    
+    # Plot the national average for comparison
+    ax.plot(
+        filtered_df['Month'], 
+        filtered_df['National'], 
+        label='National mean', 
+        linestyle=(0, (1, 3)), 
+        color='black' if grayscale else 'blue'
+        )
     
     # Set title and labels for each subplot
     ax.set_title(f'{region} region')
@@ -2708,18 +3231,13 @@ for i, region in enumerate(regions):
 # Adjust layout to prevent overlapping
 plt.tight_layout()
 
-plt.savefig(f'{plots_folder}/FigA5.{image_format}', format=image_format, dpi=1200)
+plt.savefig(f'{plots_folder}/Fig9.{image_format}', format=image_format, dpi=1200)
 
 # Show the plot
 plt.show()
 ```
-
-    The PostScript backend does not support transparency; partially transparent artists will be rendered opaque.
     
-
-
-    
-![png](main_files/main_51_1.png)
+![png](nbconvert_output/output_60_1.png)
     
 
 
@@ -2823,7 +3341,7 @@ print(f'Birth place not specified:  {not_specified_birth_place:,} ({not_specifie
 ```
 
     Birth place not specified:  615,775 (4.89%)
-    
+
 
 
 ```python
@@ -2834,7 +3352,7 @@ print(f'Marital status not specified:  {not_specified_marital_status:,} ({not_sp
 ```
 
     Marital status not specified:  737,473 (5.85%)
-    
+
 
 
 ```python
@@ -3174,7 +3692,7 @@ print(f'No information regarding mother education level:  {not_specified_educati
 ```
 
     No information regarding mother education level:  838,813 (6.65%)
-    
+
 
 
 ```python
@@ -3185,7 +3703,7 @@ print(f'No information regarding father education level:  {not_specified_educati
 ```
 
     No information regarding father education level:  1,855,792 (14.72%)
-    
+
 
 
 ```python
@@ -3580,13 +4098,13 @@ def determine_age_in_months(age):
 respiratory_illness_df1['EDAD_MESES'] = respiratory_illness_df1['EDAD'].apply(determine_age_in_months)
 ```
 
-    C:\Users\aless\AppData\Local\Temp\ipykernel_31212\1722330210.py:1: SettingWithCopyWarning: 
+    /tmp/ipykernel_3379182/1722330210.py:1: SettingWithCopyWarning: 
     A value is trying to be set on a copy of a slice from a DataFrame.
     Try using .loc[row_indexer,col_indexer] = value instead
     
     See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy
       respiratory_illness_df1['EDAD_MESES'] = respiratory_illness_df1['EDAD'].apply(determine_age_in_months)
-    
+
 
 
 ```python
@@ -3970,7 +4488,7 @@ grouped_df.head(12)
 plt.figure(figsize=(14, 6))
 sns.heatmap(grouped_df, annot=True, cmap='Greys' if grayscale else 'RdYlGn_r', linewidths=.5, fmt='.2f')
 plt.ylabel('Month of Birth')
-plt.xlabel('Month of Life')
+plt.xlabel('Age in months postbirth')
 
 
 plt.savefig(f'{plots_folder}/Fig8.{image_format}', format=image_format, dpi=1200)
@@ -3980,7 +4498,7 @@ plt.show()
 
 
     
-![png](main_files/main_70_0.png)
+![png](nbconvert_output/output_79_0.png)
     
 
 
