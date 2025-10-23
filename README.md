@@ -58,6 +58,21 @@ grayscale = True
 
 
 ```python
+# Global style adjustments
+plt.rcParams.update({
+    "font.size": 14,              # general font size
+    "axes.labelsize": 14,         # x and y label size
+    "axes.titlesize": 15,         # title size
+    "xtick.labelsize": 14,        # x-axis tick label size
+    "ytick.labelsize": 14,        # y-axis tick label size
+    "figure.dpi": 1200,            # export quality (high-res)
+    "savefig.bbox": "tight",      # prevent cutoff
+    "savefig.pad_inches": 0.3,    # add padding around figure
+})
+```
+
+
+```python
 # Helper variables
 datasets_folder = 'Datasets'
 plots_folder = 'Plots'
@@ -563,7 +578,7 @@ grouped_df.head(16)
     <tr>
       <th>6</th>
       <td>J22X</td>
-      <td>Acute lower respiratory tract infection, non-s...</td>
+      <td>Acute lower respiratory tract infection, non-specified</td>
       <td>338</td>
       <td>3.84</td>
     </tr>
@@ -577,14 +592,14 @@ grouped_df.head(16)
     <tr>
       <th>8</th>
       <td>J380-J399</td>
-      <td>Laryngeal, pharyngeal and other upper respirat...</td>
+      <td>Laryngeal, pharyngeal and other upper respiratory tract disorders</td>
       <td>30</td>
       <td>0.34</td>
     </tr>
     <tr>
       <th>9</th>
       <td>J42X-J449</td>
-      <td>Bronchitis, emphysema, and other chronic lung ...</td>
+      <td>Bronchitis, emphysema, and other chronic lung diseases</td>
       <td>74</td>
       <td>0.84</td>
     </tr>
@@ -598,14 +613,14 @@ grouped_df.head(16)
     <tr>
       <th>11</th>
       <td>J677-J849</td>
-      <td>Pneumonitis associated to diverse conditions a...</td>
+      <td>Pneumonitis associated to diverse conditions and other lung disorders</td>
       <td>624</td>
       <td>7.09</td>
     </tr>
     <tr>
       <th>12</th>
       <td>J852-J948</td>
-      <td>Pulmonary abscess, pneumothorax and other pleu...</td>
+      <td>Pulmonary abscess, pneumothorax and other pleural space disorders</td>
       <td>95</td>
       <td>1.08</td>
     </tr>
@@ -753,20 +768,24 @@ plt.figure(figsize=(12, 6))
 plt.plot(grouped_df['PERIODO_NAC'], grouped_df['Mortality_Rate_Birth'], label='Mortality Rate (J + U) month of birth',  linestyle='-', color='gray' if grayscale else 'orange')
 
 # Plotting Mortality Rate based on Occurrence
-plt.plot(grouped_df['PERIODO_NAC'], grouped_df['Mortality_Rate_Occurence'], label='Mortality Rate (J + U) month of occurrence',  linestyle=(0, (1, 3)), color='gray' if grayscale else 'blue')
+plt.plot(grouped_df['PERIODO_NAC'], grouped_df['Mortality_Rate_Occurence'], label='Mortality Rate (J + U) month of occurrence',  linestyle=(0, (2, 3)), color='gray' if grayscale else 'blue')
 
 
 plt.legend()
 
-plt.xticks(rotation=90, ha='center')
+xtick_positions = range(0, len(grouped_df), 2) 
+xtick_labels = grouped_df['PERIODO_NAC'].iloc[xtick_positions]
 
-plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6])  # You can specify any list of values for the y-ticks
+plt.xticks(xtick_positions, xtick_labels, rotation=90)
+
+
+plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6])
 
 
 # Show grid
 plt.grid(axis='y')
 
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2) 
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=2) 
 
 # Remove grid borders (spines)
 ax = plt.gca()
@@ -783,8 +802,11 @@ plt.savefig(f'{plots_folder}/Fig1.{image_format}', format=image_format, dpi=1200
 # Display the plot
 plt.show()
 ```
+
+
+
     
-![png](nbconvert_output/output_29_1.png)
+![png](nbconvert_output/output_30_1.png)
     
 
 
@@ -1079,7 +1101,7 @@ plt.bar(index + bar_width,
         mortality_rate_occurrence, 
         bar_width, label='Month of occurrence J+U mortality', 
         hatch='///', 
-        color='lightgray' if grayscale else 'blue', 
+        color='gray' if grayscale else 'blue', 
         edgecolor='white')
 
 # Error bars
@@ -1103,7 +1125,7 @@ plt.yticks([0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2])  # You can specify any list of val
 # Show grid
 plt.grid(axis='y')
 
-plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=2) 
+plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.25), ncol=2) 
 
 # Remove grid borders (spines)
 ax = plt.gca()
@@ -1120,8 +1142,11 @@ plt.savefig(f'{plots_folder}/Fig2.{image_format}', format=image_format, dpi=1200
 # Display the plot
 plt.show()
 ```
+
+
+
     
-![png](nbconvert_output/output_33_1.png)
+![png](nbconvert_output/output_34_1.png)
     
 
 
@@ -1962,6 +1987,994 @@ grouped_df.head(8)
 
 
 ```python
+grouped_deaths = respiratory_illness_df1.groupby(['ENT_RESID', 'MES_OCURR']).size().reset_index(name='Deaths')
+grouped_deaths.head(12)
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>ENT_RESID</th>
+      <th>MES_OCURR</th>
+      <th>Deaths</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>1</td>
+      <td>14</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>2</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1</td>
+      <td>3</td>
+      <td>8</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>4</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1</td>
+      <td>5</td>
+      <td>3</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>1</td>
+      <td>6</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>1</td>
+      <td>7</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>1</td>
+      <td>8</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>1</td>
+      <td>9</td>
+      <td>6</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>1</td>
+      <td>10</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>1</td>
+      <td>11</td>
+      <td>4</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>1</td>
+      <td>12</td>
+      <td>17</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+grouped_births = birth_records_df.groupby(['ENT_RESID', 'MES_NAC']).size().reset_index(name='Births')
+grouped_births.head(12)
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>ENT_RESID</th>
+      <th>MES_NAC</th>
+      <th>Births</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>1</td>
+      <td>1</td>
+      <td>12508</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>1</td>
+      <td>2</td>
+      <td>11276</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>1</td>
+      <td>3</td>
+      <td>12492</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>1</td>
+      <td>4</td>
+      <td>12366</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>1</td>
+      <td>5</td>
+      <td>12752</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>1</td>
+      <td>6</td>
+      <td>12448</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>1</td>
+      <td>7</td>
+      <td>13234</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>1</td>
+      <td>8</td>
+      <td>13830</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>1</td>
+      <td>9</td>
+      <td>14115</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>1</td>
+      <td>10</td>
+      <td>13896</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>1</td>
+      <td>11</td>
+      <td>12635</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>1</td>
+      <td>12</td>
+      <td>13152</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+grouped_df = pd.merge(states_df, grouped_births, left_on='ENTIDAD', right_on='ENT_RESID', how='inner')
+grouped_df = pd.merge(grouped_df, grouped_deaths, left_on=['ENTIDAD', 'MES_NAC'], right_on=['ENT_RESID', 'MES_OCURR'], how='inner')
+# Drop unused columns and rename existing ones
+grouped_df.drop(columns=['ENT_RESID_x', 'ENT_RESID_y', 'MES_OCURR'], inplace=True)
+grouped_df.rename(columns={'ENTIDAD': 'State_Code', 'NOM_ENTIDAD': 'State', 'MES_NAC' : 'Month'}, inplace=True)
+
+r, lo, hi = rate_and_ci(grouped_df['Deaths'].values, grouped_df['Births'].values)
+
+grouped_df['Respiratory_Mortality_Rate'] = r
+
+grouped_df.tail(13)
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>State_Code</th>
+      <th>State</th>
+      <th>REGION</th>
+      <th>Month</th>
+      <th>Births</th>
+      <th>Deaths</th>
+      <th>Respiratory_Mortality_Rate</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>371</th>
+      <td>31</td>
+      <td>Yucatan</td>
+      <td>Yucatan</td>
+      <td>12</td>
+      <td>17663</td>
+      <td>19</td>
+      <td>1.08</td>
+    </tr>
+    <tr>
+      <th>372</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>1</td>
+      <td>15304</td>
+      <td>19</td>
+      <td>1.24</td>
+    </tr>
+    <tr>
+      <th>373</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>2</td>
+      <td>13858</td>
+      <td>14</td>
+      <td>1.01</td>
+    </tr>
+    <tr>
+      <th>374</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>3</td>
+      <td>15071</td>
+      <td>8</td>
+      <td>0.53</td>
+    </tr>
+    <tr>
+      <th>375</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>4</td>
+      <td>14967</td>
+      <td>5</td>
+      <td>0.33</td>
+    </tr>
+    <tr>
+      <th>376</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>5</td>
+      <td>15859</td>
+      <td>4</td>
+      <td>0.25</td>
+    </tr>
+    <tr>
+      <th>377</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>6</td>
+      <td>15130</td>
+      <td>3</td>
+      <td>0.20</td>
+    </tr>
+    <tr>
+      <th>378</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>7</td>
+      <td>15809</td>
+      <td>8</td>
+      <td>0.51</td>
+    </tr>
+    <tr>
+      <th>379</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>8</td>
+      <td>16803</td>
+      <td>8</td>
+      <td>0.48</td>
+    </tr>
+    <tr>
+      <th>380</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>9</td>
+      <td>17810</td>
+      <td>5</td>
+      <td>0.28</td>
+    </tr>
+    <tr>
+      <th>381</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>10</td>
+      <td>16983</td>
+      <td>2</td>
+      <td>0.12</td>
+    </tr>
+    <tr>
+      <th>382</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>11</td>
+      <td>15445</td>
+      <td>14</td>
+      <td>0.91</td>
+    </tr>
+    <tr>
+      <th>383</th>
+      <td>32</td>
+      <td>Zacatecas</td>
+      <td>Norte</td>
+      <td>12</td>
+      <td>15784</td>
+      <td>15</td>
+      <td>0.95</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# map month numbers → names
+month_map = {1:'January',2:'February',3:'March',4:'April',5:'May',6:'June',
+             7:'July',8:'August',9:'September',10:'October',11:'November',12:'December'}
+
+order = ['July','August','September','October','November','December',
+         'January','February','March','April','May','June'] 
+
+tmp = grouped_df.loc[grouped_df['Month'].notna(),
+                     ['State','REGION','Month','Respiratory_Mortality_Rate']].copy()
+tmp['MonthName'] = tmp['Month'].astype(int).map(month_map)
+
+pivot = (
+    tmp.pivot_table(index=['State'],
+                    columns='MonthName',
+                    values='Respiratory_Mortality_Rate',
+                    aggfunc='first')
+)
+
+# reorder columns, round, tidy
+pivot = pivot.reindex(columns=order).round(2)
+pivot.columns.name = None
+
+pivot.head(32)
+
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>July</th>
+      <th>August</th>
+      <th>September</th>
+      <th>October</th>
+      <th>November</th>
+      <th>December</th>
+      <th>January</th>
+      <th>February</th>
+      <th>March</th>
+      <th>April</th>
+      <th>May</th>
+      <th>June</th>
+    </tr>
+    <tr>
+      <th>State</th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>Aguascalientes</th>
+      <td>0.30</td>
+      <td>0.29</td>
+      <td>0.43</td>
+      <td>0.36</td>
+      <td>0.32</td>
+      <td>1.29</td>
+      <td>1.12</td>
+      <td>0.53</td>
+      <td>0.64</td>
+      <td>0.24</td>
+      <td>0.24</td>
+      <td>0.48</td>
+    </tr>
+    <tr>
+      <th>Baja California</th>
+      <td>0.29</td>
+      <td>0.17</td>
+      <td>0.49</td>
+      <td>0.24</td>
+      <td>0.59</td>
+      <td>1.27</td>
+      <td>1.32</td>
+      <td>1.09</td>
+      <td>0.88</td>
+      <td>0.60</td>
+      <td>0.58</td>
+      <td>0.48</td>
+    </tr>
+    <tr>
+      <th>Baja California Sur</th>
+      <td>0.51</td>
+      <td>0.15</td>
+      <td>0.14</td>
+      <td>0.43</td>
+      <td>0.80</td>
+      <td>0.92</td>
+      <td>0.65</td>
+      <td>0.36</td>
+      <td>0.69</td>
+      <td>0.80</td>
+      <td>0.40</td>
+      <td>0.20</td>
+    </tr>
+    <tr>
+      <th>Campeche</th>
+      <td>0.36</td>
+      <td>0.11</td>
+      <td>0.84</td>
+      <td>0.42</td>
+      <td>0.84</td>
+      <td>1.02</td>
+      <td>0.14</td>
+      <td>1.15</td>
+      <td>0.86</td>
+      <td>0.69</td>
+      <td>0.41</td>
+      <td>0.67</td>
+    </tr>
+    <tr>
+      <th>Chiapas</th>
+      <td>1.49</td>
+      <td>1.18</td>
+      <td>1.11</td>
+      <td>1.31</td>
+      <td>1.69</td>
+      <td>1.61</td>
+      <td>1.72</td>
+      <td>1.38</td>
+      <td>1.54</td>
+      <td>1.23</td>
+      <td>1.32</td>
+      <td>1.29</td>
+    </tr>
+    <tr>
+      <th>Chihuahua</th>
+      <td>0.38</td>
+      <td>0.25</td>
+      <td>0.40</td>
+      <td>0.77</td>
+      <td>0.62</td>
+      <td>1.78</td>
+      <td>2.06</td>
+      <td>1.58</td>
+      <td>1.17</td>
+      <td>0.70</td>
+      <td>0.70</td>
+      <td>0.49</td>
+    </tr>
+    <tr>
+      <th>Ciudad de Mexico</th>
+      <td>0.51</td>
+      <td>0.43</td>
+      <td>0.43</td>
+      <td>0.84</td>
+      <td>1.34</td>
+      <td>1.27</td>
+      <td>1.15</td>
+      <td>1.20</td>
+      <td>0.57</td>
+      <td>0.43</td>
+      <td>0.34</td>
+      <td>0.37</td>
+    </tr>
+    <tr>
+      <th>Coahuila de Zaragoza</th>
+      <td>0.17</td>
+      <td>0.26</td>
+      <td>0.41</td>
+      <td>0.39</td>
+      <td>0.68</td>
+      <td>1.09</td>
+      <td>1.24</td>
+      <td>0.67</td>
+      <td>0.43</td>
+      <td>0.28</td>
+      <td>0.19</td>
+      <td>0.30</td>
+    </tr>
+    <tr>
+      <th>Colima</th>
+      <td>0.55</td>
+      <td>0.17</td>
+      <td>0.32</td>
+      <td>0.15</td>
+      <td>0.50</td>
+      <td>0.32</td>
+      <td>0.35</td>
+      <td>0.42</td>
+      <td>0.86</td>
+      <td>0.43</td>
+      <td>0.79</td>
+      <td>0.19</td>
+    </tr>
+    <tr>
+      <th>Durango</th>
+      <td>0.92</td>
+      <td>0.54</td>
+      <td>0.31</td>
+      <td>0.82</td>
+      <td>0.70</td>
+      <td>1.47</td>
+      <td>1.55</td>
+      <td>1.09</td>
+      <td>0.87</td>
+      <td>0.55</td>
+      <td>0.53</td>
+      <td>0.43</td>
+    </tr>
+    <tr>
+      <th>Guanajuato</th>
+      <td>0.49</td>
+      <td>0.28</td>
+      <td>0.41</td>
+      <td>0.49</td>
+      <td>0.88</td>
+      <td>0.79</td>
+      <td>0.97</td>
+      <td>1.18</td>
+      <td>0.83</td>
+      <td>0.56</td>
+      <td>0.51</td>
+      <td>0.45</td>
+    </tr>
+    <tr>
+      <th>Guerrero</th>
+      <td>0.51</td>
+      <td>0.30</td>
+      <td>0.51</td>
+      <td>0.61</td>
+      <td>0.86</td>
+      <td>0.33</td>
+      <td>0.46</td>
+      <td>0.75</td>
+      <td>0.71</td>
+      <td>0.71</td>
+      <td>0.67</td>
+      <td>0.47</td>
+    </tr>
+    <tr>
+      <th>Hidalgo</th>
+      <td>0.37</td>
+      <td>0.12</td>
+      <td>0.31</td>
+      <td>0.43</td>
+      <td>0.64</td>
+      <td>0.91</td>
+      <td>1.04</td>
+      <td>1.09</td>
+      <td>0.75</td>
+      <td>0.26</td>
+      <td>0.47</td>
+      <td>0.13</td>
+    </tr>
+    <tr>
+      <th>Jalisco</th>
+      <td>0.32</td>
+      <td>0.34</td>
+      <td>0.42</td>
+      <td>0.35</td>
+      <td>0.54</td>
+      <td>0.74</td>
+      <td>0.81</td>
+      <td>0.76</td>
+      <td>0.66</td>
+      <td>0.52</td>
+      <td>0.58</td>
+      <td>0.31</td>
+    </tr>
+    <tr>
+      <th>Mexico</th>
+      <td>0.34</td>
+      <td>0.29</td>
+      <td>0.35</td>
+      <td>0.44</td>
+      <td>0.72</td>
+      <td>1.23</td>
+      <td>1.01</td>
+      <td>0.79</td>
+      <td>0.57</td>
+      <td>0.38</td>
+      <td>0.30</td>
+      <td>0.36</td>
+    </tr>
+    <tr>
+      <th>Michoacan de Ocampo</th>
+      <td>0.57</td>
+      <td>0.42</td>
+      <td>0.42</td>
+      <td>0.36</td>
+      <td>0.56</td>
+      <td>0.70</td>
+      <td>1.17</td>
+      <td>0.96</td>
+      <td>0.64</td>
+      <td>0.75</td>
+      <td>0.41</td>
+      <td>0.26</td>
+    </tr>
+    <tr>
+      <th>Morelos</th>
+      <td>0.13</td>
+      <td>0.32</td>
+      <td>0.12</td>
+      <td>0.38</td>
+      <td>0.21</td>
+      <td>0.21</td>
+      <td>0.29</td>
+      <td>0.40</td>
+      <td>0.48</td>
+      <td>0.48</td>
+      <td>0.33</td>
+      <td>0.55</td>
+    </tr>
+    <tr>
+      <th>Nayarit</th>
+      <td>0.66</td>
+      <td>0.77</td>
+      <td>0.17</td>
+      <td>0.09</td>
+      <td>1.04</td>
+      <td>0.56</td>
+      <td>0.98</td>
+      <td>0.45</td>
+      <td>0.57</td>
+      <td>0.69</td>
+      <td>0.44</td>
+      <td>0.34</td>
+    </tr>
+    <tr>
+      <th>Nuevo Leon</th>
+      <td>0.48</td>
+      <td>0.39</td>
+      <td>0.17</td>
+      <td>0.35</td>
+      <td>0.67</td>
+      <td>0.71</td>
+      <td>1.10</td>
+      <td>0.85</td>
+      <td>0.55</td>
+      <td>0.46</td>
+      <td>0.33</td>
+      <td>0.21</td>
+    </tr>
+    <tr>
+      <th>Oaxaca</th>
+      <td>0.73</td>
+      <td>0.63</td>
+      <td>0.43</td>
+      <td>0.69</td>
+      <td>0.99</td>
+      <td>1.03</td>
+      <td>0.96</td>
+      <td>0.85</td>
+      <td>0.84</td>
+      <td>0.97</td>
+      <td>0.60</td>
+      <td>0.72</td>
+    </tr>
+    <tr>
+      <th>Puebla</th>
+      <td>0.90</td>
+      <td>0.56</td>
+      <td>0.57</td>
+      <td>0.89</td>
+      <td>1.32</td>
+      <td>1.85</td>
+      <td>1.42</td>
+      <td>1.70</td>
+      <td>1.18</td>
+      <td>0.80</td>
+      <td>0.61</td>
+      <td>0.75</td>
+    </tr>
+    <tr>
+      <th>Queretaro</th>
+      <td>0.25</td>
+      <td>0.38</td>
+      <td>0.37</td>
+      <td>0.28</td>
+      <td>0.52</td>
+      <td>0.97</td>
+      <td>0.53</td>
+      <td>0.54</td>
+      <td>0.32</td>
+      <td>0.26</td>
+      <td>0.36</td>
+      <td>0.21</td>
+    </tr>
+    <tr>
+      <th>Quintana Roo</th>
+      <td>0.46</td>
+      <td>0.49</td>
+      <td>0.66</td>
+      <td>0.54</td>
+      <td>1.04</td>
+      <td>0.68</td>
+      <td>1.17</td>
+      <td>0.33</td>
+      <td>1.20</td>
+      <td>0.58</td>
+      <td>0.77</td>
+      <td>0.52</td>
+    </tr>
+    <tr>
+      <th>San Luis Potosi</th>
+      <td>0.20</td>
+      <td>0.42</td>
+      <td>0.36</td>
+      <td>0.48</td>
+      <td>0.67</td>
+      <td>1.33</td>
+      <td>0.69</td>
+      <td>0.84</td>
+      <td>0.68</td>
+      <td>0.72</td>
+      <td>0.17</td>
+      <td>0.22</td>
+    </tr>
+    <tr>
+      <th>Sinaloa</th>
+      <td>0.26</td>
+      <td>0.33</td>
+      <td>0.43</td>
+      <td>0.62</td>
+      <td>0.58</td>
+      <td>0.63</td>
+      <td>0.94</td>
+      <td>0.95</td>
+      <td>1.29</td>
+      <td>0.54</td>
+      <td>0.86</td>
+      <td>0.34</td>
+    </tr>
+    <tr>
+      <th>Sonora</th>
+      <td>0.49</td>
+      <td>0.20</td>
+      <td>0.26</td>
+      <td>0.71</td>
+      <td>0.70</td>
+      <td>1.45</td>
+      <td>1.47</td>
+      <td>0.80</td>
+      <td>1.11</td>
+      <td>1.08</td>
+      <td>0.74</td>
+      <td>0.31</td>
+    </tr>
+    <tr>
+      <th>Tabasco</th>
+      <td>0.55</td>
+      <td>0.54</td>
+      <td>0.69</td>
+      <td>0.52</td>
+      <td>1.09</td>
+      <td>1.04</td>
+      <td>1.52</td>
+      <td>1.39</td>
+      <td>1.34</td>
+      <td>0.61</td>
+      <td>0.67</td>
+      <td>0.71</td>
+    </tr>
+    <tr>
+      <th>Tamaulipas</th>
+      <td>0.28</td>
+      <td>0.35</td>
+      <td>0.21</td>
+      <td>0.40</td>
+      <td>0.47</td>
+      <td>0.69</td>
+      <td>0.74</td>
+      <td>0.86</td>
+      <td>0.47</td>
+      <td>0.69</td>
+      <td>0.41</td>
+      <td>0.32</td>
+    </tr>
+    <tr>
+      <th>Tlaxcala</th>
+      <td>0.25</td>
+      <td>0.41</td>
+      <td>0.54</td>
+      <td>0.71</td>
+      <td>1.34</td>
+      <td>1.61</td>
+      <td>2.07</td>
+      <td>0.94</td>
+      <td>0.94</td>
+      <td>0.26</td>
+      <td>0.59</td>
+      <td>0.26</td>
+    </tr>
+    <tr>
+      <th>Veracruz de Ignacio de la Llave</th>
+      <td>0.57</td>
+      <td>0.60</td>
+      <td>0.50</td>
+      <td>0.67</td>
+      <td>0.80</td>
+      <td>1.12</td>
+      <td>1.09</td>
+      <td>1.17</td>
+      <td>0.94</td>
+      <td>0.69</td>
+      <td>0.77</td>
+      <td>0.51</td>
+    </tr>
+    <tr>
+      <th>Yucatan</th>
+      <td>1.23</td>
+      <td>0.65</td>
+      <td>0.90</td>
+      <td>1.42</td>
+      <td>1.31</td>
+      <td>1.08</td>
+      <td>0.87</td>
+      <td>1.22</td>
+      <td>0.82</td>
+      <td>1.02</td>
+      <td>0.74</td>
+      <td>0.81</td>
+    </tr>
+    <tr>
+      <th>Zacatecas</th>
+      <td>0.51</td>
+      <td>0.48</td>
+      <td>0.28</td>
+      <td>0.12</td>
+      <td>0.91</td>
+      <td>0.95</td>
+      <td>1.24</td>
+      <td>1.01</td>
+      <td>0.53</td>
+      <td>0.33</td>
+      <td>0.25</td>
+      <td>0.20</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+
+```python
+# Plot the heatmap with custom colormap
+plt.figure(figsize=(14, 14))
+sns.heatmap(pivot, annot=True, cmap='Greys' if grayscale else 'RdYlGn_r', linewidths=.5, fmt='.2f')
+plt.ylabel('State')
+plt.xlabel('Month of occurrence') 
+
+plt.savefig(f'{plots_folder}/Fig10.{image_format}', format=image_format, dpi=1200)
+
+plt.show()
+```
+
+
+    
+![png](nbconvert_output/output_50_0.png)
+    
+
+
+
+```python
 # Restore default settings after customization
 pd.reset_option('display.max_colwidth')
 ```
@@ -2579,7 +3592,7 @@ for i, region in enumerate(regions):
         filtered_df['Month'], 
         filtered_df['National'], 
         label='National mean', 
-        linestyle=(0, (1, 3)), 
+        linestyle=(0, (2, 3)), 
         color='black' if grayscale else 'blue'
         )
     
@@ -2606,8 +3619,11 @@ plt.savefig(f'{plots_folder}/Fig3.{image_format}', format=image_format, dpi=1200
 # Show the plot
 plt.show()
 ```
+
+
+
     
-![png](nbconvert_output/output_54_1.png)
+![png](nbconvert_output/output_60_1.png)
     
 
 
@@ -3209,7 +4225,7 @@ for i, region in enumerate(regions):
         filtered_df['Month'], 
         filtered_df['National'], 
         label='National mean', 
-        linestyle=(0, (1, 3)), 
+        linestyle=(0, (2, 3)), 
         color='black' if grayscale else 'blue'
         )
     
@@ -3236,8 +4252,11 @@ plt.savefig(f'{plots_folder}/Fig9.{image_format}', format=image_format, dpi=1200
 # Show the plot
 plt.show()
 ```
+
+
+
     
-![png](nbconvert_output/output_60_1.png)
+![png](nbconvert_output/output_66_1.png)
     
 
 
@@ -4098,7 +5117,7 @@ def determine_age_in_months(age):
 respiratory_illness_df1['EDAD_MESES'] = respiratory_illness_df1['EDAD'].apply(determine_age_in_months)
 ```
 
-    /tmp/ipykernel_3379182/1722330210.py:1: SettingWithCopyWarning: 
+    /tmp/ipykernel_3403971/1722330210.py:1: SettingWithCopyWarning: 
     A value is trying to be set on a copy of a slice from a DataFrame.
     Try using .loc[row_indexer,col_indexer] = value instead
     
@@ -4498,262 +5517,6 @@ plt.show()
 
 
     
-![png](nbconvert_output/output_79_0.png)
+![png](nbconvert_output/output_85_0.png)
     
-
-
-
-```python
-# Registered deaths grouped by year/month of birth 
-grouped_deaths_df = respiratory_illness_df1.groupby(['ENT_RESID','MES_NACIM']).size().reset_index(name='Deaths')
-grouped_deaths_df = grouped_deaths_df[grouped_deaths_df['ENT_RESID'] == 24]
-grouped_deaths_df = pd.merge(grouped_deaths_df, states_df, left_on='ENT_RESID', right_on='ENTIDAD', how='inner')
-#grouped_deaths_df = grouped_deaths_df.groupby(['REGION','MES_NACIM']).size().reset_index(name='Deaths')
-
-# Register births grouped by year/month
-grouped_births_df = birth_records_df.groupby(['ENT_RESID','MES_NAC']).size().reset_index(name='Births')
-grouped_births_df = grouped_births_df[grouped_births_df['ENT_RESID'] == 24]
-grouped_births_df = pd.merge(grouped_births_df, states_df, left_on='ENT_RESID', right_on='ENTIDAD', how='inner')
-
-grouped_df = pd.merge(grouped_births_df, grouped_deaths_df, left_on=['ENT_RESID', 'MES_NAC'], right_on=['ENT_RESID', 'MES_NACIM'], how='left')
-grouped_df.drop(columns=['ENTIDAD_x','MES_NACIM','ENTIDAD_y','NOM_ENTIDAD_y', 'REGION_y'], inplace=True)
-grouped_df.rename(columns={'REGION_x': 'Region', 'NOM_ENTIDAD_x': 'State', 'MES_NAC': 'Month'}, inplace=True)
-grouped_df['Deaths'] = grouped_df['Deaths'].fillna(0)
-
-grouped_df = grouped_df.groupby(['State', 'Month'])[['Births', 'Deaths']].sum().reset_index()
-grouped_df['Mortality_Rate'] =  grouped_df['Deaths'] / grouped_df['Births'] *  1000
-
-pivot_df = grouped_df.pivot(index='Month', columns='State', values='Mortality_Rate').reset_index()
-
-# Replace the 'Month' values with month names
-pivot_df['Month'] = pivot_df['Month'].map(month_mapping)
-
-# Convert the 'Month' column to a categorical type with the custom order
-pivot_df['Month'] = pd.Categorical(pivot_df['Month'], categories=custom_order, ordered=True)
-
-# Sort the dataframe based on the custom order
-pivot_df = pivot_df.sort_values('Month')
-
-
-pivot_df.head(13)
-```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>State</th>
-      <th>Month</th>
-      <th>San Luis Potosi</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>6</th>
-      <td>July</td>
-      <td>0.649746</td>
-    </tr>
-    <tr>
-      <th>7</th>
-      <td>August</td>
-      <td>0.802108</td>
-    </tr>
-    <tr>
-      <th>8</th>
-      <td>September</td>
-      <td>0.794425</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>October</td>
-      <td>0.559451</td>
-    </tr>
-    <tr>
-      <th>10</th>
-      <td>November</td>
-      <td>0.794680</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>December</td>
-      <td>0.363534</td>
-    </tr>
-    <tr>
-      <th>0</th>
-      <td>January</td>
-      <td>0.474772</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>February</td>
-      <td>0.938828</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>March</td>
-      <td>0.450065</td>
-    </tr>
-    <tr>
-      <th>3</th>
-      <td>April</td>
-      <td>0.090506</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>May</td>
-      <td>0.390422</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>June</td>
-      <td>0.352144</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
-
-
-
-```python
-# Registered deaths grouped by year/month of demise
-grouped_deaths_df = respiratory_illness_df1.groupby(['ENT_RESID','MES_OCURR']).size().reset_index(name='Deaths')
-grouped_deaths_df = grouped_deaths_df[grouped_deaths_df['ENT_RESID'] == 24]
-grouped_deaths_df = pd.merge(grouped_deaths_df, states_df, left_on='ENT_RESID', right_on='ENTIDAD', how='inner')
-
-# Register births grouped by year/month
-grouped_births_df = birth_records_df.groupby(['ENT_RESID','MES_NAC']).size().reset_index(name='Births')
-grouped_births_df = grouped_births_df[grouped_births_df['ENT_RESID'] == 24]
-grouped_births_df = pd.merge(grouped_births_df, states_df, left_on='ENT_RESID', right_on='ENTIDAD', how='inner')
-
-grouped_df = pd.merge(grouped_births_df, grouped_deaths_df, left_on=['ENT_RESID', 'MES_NAC'], right_on=['ENT_RESID', 'MES_OCURR'], how='left')
-grouped_df.drop(columns=['ENTIDAD_x','MES_OCURR','ENTIDAD_y','NOM_ENTIDAD_y', 'REGION_y'], inplace=True)
-grouped_df.rename(columns={'REGION_x': 'Region', 'NOM_ENTIDAD_x': 'State', 'MES_NAC': 'Month'}, inplace=True)
-grouped_df['Deaths'] = grouped_df['Deaths'].fillna(0)
-
-grouped_df = grouped_df.groupby(['State', 'Month'])[['Births', 'Deaths']].sum().reset_index()
-grouped_df['Mortality_Rate'] =  grouped_df['Deaths'] / grouped_df['Births'] *  1000
-
-
-
-pivot_df = grouped_df.pivot(index='Month', columns='State', values='Mortality_Rate').reset_index()
-
-# Replace the 'Month' values with month names
-pivot_df['Month'] = pivot_df['Month'].map(month_mapping)
-
-# Convert the 'Month' column to a categorical type with the custom order
-pivot_df['Month'] = pd.Categorical(pivot_df['Month'], categories=occurence_custom_order, ordered=True)
-
-# Sort the dataframe based on the custom order
-pivot_df = pivot_df.sort_values('Month')
-
-pivot_df.head(13)
-```
-
-
-
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-
-    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-
-    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-<table border="1" class="dataframe">
-  <thead>
-    <tr style="text-align: right;">
-      <th>State</th>
-      <th>Month</th>
-      <th>San Luis Potosi</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <th>3</th>
-      <td>April</td>
-      <td>0.724047</td>
-    </tr>
-    <tr>
-      <th>4</th>
-      <td>May</td>
-      <td>0.173521</td>
-    </tr>
-    <tr>
-      <th>5</th>
-      <td>June</td>
-      <td>0.220090</td>
-    </tr>
-    <tr>
-      <th>6</th>
-      <td>July</td>
-      <td>0.203046</td>
-    </tr>
-    <tr>
-      <th>7</th>
-      <td>August</td>
-      <td>0.420152</td>
-    </tr>
-    <tr>
-      <th>8</th>
-      <td>September</td>
-      <td>0.361102</td>
-    </tr>
-    <tr>
-      <th>9</th>
-      <td>October</td>
-      <td>0.484858</td>
-    </tr>
-    <tr>
-      <th>10</th>
-      <td>November</td>
-      <td>0.669204</td>
-    </tr>
-    <tr>
-      <th>11</th>
-      <td>December</td>
-      <td>1.332956</td>
-    </tr>
-    <tr>
-      <th>0</th>
-      <td>January</td>
-      <td>0.690578</td>
-    </tr>
-    <tr>
-      <th>1</th>
-      <td>February</td>
-      <td>0.840004</td>
-    </tr>
-    <tr>
-      <th>2</th>
-      <td>March</td>
-      <td>0.675098</td>
-    </tr>
-  </tbody>
-</table>
-</div>
-
 
