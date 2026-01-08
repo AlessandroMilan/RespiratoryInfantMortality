@@ -1,6 +1,6 @@
 # Respiratory infant mortality rate in Mexico by month of birth
 
-Daniel E. Noyola, Héctor A. Milán, Juan C. Cuevas-Tello
+Alessandro Milán, Daniel E. Noyola, Juan C. Cuevas-Tello
 
 Universidad Autónoma de San Luis Potosí
 
@@ -8,26 +8,6 @@ Universidad Autónoma de San Luis Potosí
 ```python
 %pip install pandas matplotlib seaborn numpy statsmodels
 ```
-
-    Requirement already satisfied: pandas in ./.venv/lib/python3.12/site-packages (2.3.3)
-    Requirement already satisfied: matplotlib in ./.venv/lib/python3.12/site-packages (3.10.7)
-    Requirement already satisfied: seaborn in ./.venv/lib/python3.12/site-packages (0.13.2)
-    Requirement already satisfied: numpy in ./.venv/lib/python3.12/site-packages (2.3.4)
-    Requirement already satisfied: statsmodels in ./.venv/lib/python3.12/site-packages (0.14.5)
-    Requirement already satisfied: python-dateutil>=2.8.2 in ./.venv/lib/python3.12/site-packages (from pandas) (2.9.0.post0)
-    Requirement already satisfied: pytz>=2020.1 in ./.venv/lib/python3.12/site-packages (from pandas) (2025.2)
-    Requirement already satisfied: tzdata>=2022.7 in ./.venv/lib/python3.12/site-packages (from pandas) (2025.2)
-    Requirement already satisfied: contourpy>=1.0.1 in ./.venv/lib/python3.12/site-packages (from matplotlib) (1.3.3)
-    Requirement already satisfied: cycler>=0.10 in ./.venv/lib/python3.12/site-packages (from matplotlib) (0.12.1)
-    Requirement already satisfied: fonttools>=4.22.0 in ./.venv/lib/python3.12/site-packages (from matplotlib) (4.60.1)
-    Requirement already satisfied: kiwisolver>=1.3.1 in ./.venv/lib/python3.12/site-packages (from matplotlib) (1.4.9)
-    Requirement already satisfied: packaging>=20.0 in ./.venv/lib/python3.12/site-packages (from matplotlib) (25.0)
-    Requirement already satisfied: pillow>=8 in ./.venv/lib/python3.12/site-packages (from matplotlib) (12.0.0)
-    Requirement already satisfied: pyparsing>=3 in ./.venv/lib/python3.12/site-packages (from matplotlib) (3.2.5)
-    Requirement already satisfied: scipy!=1.9.2,>=1.8 in ./.venv/lib/python3.12/site-packages (from statsmodels) (1.16.2)
-    Requirement already satisfied: patsy>=0.5.6 in ./.venv/lib/python3.12/site-packages (from statsmodels) (1.0.2)
-    Requirement already satisfied: six>=1.5 in ./.venv/lib/python3.12/site-packages (from python-dateutil>=2.8.2->pandas) (1.17.0)
-    Note: you may need to restart the kernel to use updated packages.
 
 
 
